@@ -2,6 +2,7 @@
 %DEFINE OK_RESULT 0xaa55
 
 ; Display INTs
+%DEFINE DisplayChar 0x0e ; AH INT - Display a char 
 %DEFINE DisplayStr 0x1301 ; AX INT - Display String and Update Cursor
 %DEFINE DisplayReset 0x03 ; AX INT - Set VGA Video Mode
 %DEFINE UpdateVideo 0x10 ; Set Video Mode
@@ -12,6 +13,13 @@
 %DEFINE SecondUnitCX 0x0f ; CX INT - 1 second
 %DEFINE SecondUnitDX 0x4240 ; DX INT - 1 second
 %DEFINE Time 0x15 ; Set Timer
+
+; Keyboad INTs
+%DEFINE ReadKey 0x0000 ; AX INT - Read Key
+%DEFINE Keyboard 0x16 ; Keyboard services
+
+; Keyboard Utils
+% KeyENTER 0x0d ; ASCII CR
 
 bits 16
 org ORIGIN_SECTOR 
@@ -38,22 +46,34 @@ main:
     clear_screen:
        mov ax, DisplayReset 
        INT UpdateVideo 
-    
-    print:
+   
+    ask_for_name:
         mov ax, DisplayStr 
         mov bx, TextGreen
         mov cx, padding - data
         mov bp, data
         INT UpdateVideo
 
+    read_name:
+        mov ax, ReadKey
+        INT Keyboard
+        
+        ; Para de ler caso pressione ENTER
+        cmp al, KeyENTER
+        je halt
+        
+        ; Exibe o char digitado na tela
+        mov ah, DisplayChar
+        INT UpdateVideo
+        jmp read_name
+
     ; Parada de CPU
     halt:
         cli
         hlt
-    
 
     data:
-        db "Hello World!", 0
+        db "Digite seu nome: ", 0
 
     ; Padding dos bytes restantes
     padding: 
